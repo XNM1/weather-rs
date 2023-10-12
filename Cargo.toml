@@ -1,5 +1,5 @@
 [package]
-name = "weather-cli"
+name = "weather-rs"
 version = "0.0.1"
 authors = ["XNM <artem.shv@proton.me>"]
 description = "A quick and easy CLI tool for weather data fetching from different providers."
