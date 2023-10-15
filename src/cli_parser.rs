@@ -1,26 +1,33 @@
-mod errors;
-
-use anyhow::Result;
 use clap::{Parser, Subcommand};
-use errors::ProviderError;
 use std::fmt;
 use std::str::FromStr;
+use thiserror::Error;
+
+#[derive(Error, Debug, PartialEq)]
+pub enum ProviderError {
+    #[error("Weather provider not found; use the command 'weather-rs provider-list' to get a list of all available providers")]
+    ProviderNotFound,
+
+    #[error("Weather provider is not implemented; use the command 'weather-rs provider-list' to get a list of all available providers")]
+    ProviderNotImplemented,
+}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-/// A quick and easy CLI tool for fetching weather data from various providers
-pub struct WeatherCLI {
+/// Struct for CLI commands & arguments parsing
+pub struct WeatherCli {
     #[command(subcommand)]
     command: Command,
 }
 
-impl WeatherCLI {
+impl WeatherCli {
     pub fn get_command(&self) -> &Command {
         &self.command
     }
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
+/// Enum for CLI commands
 pub enum Command {
     /// Get a full list of supported providers
     ProviderList,
@@ -43,6 +50,10 @@ pub enum Command {
         #[arg(short, long)]
         date: Option<String>,
 
+        /// Get weather data in JSON format flag (optional)
+        #[arg(short, long)]
+        json: bool,
+
         /// Provider for weather data (optional)
         #[arg(short, long)]
         provider: Option<Provider>,
@@ -50,6 +61,7 @@ pub enum Command {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+/// Enum for available providers
 pub enum Provider {
     OpenWeather,
     WeatherApi,
@@ -99,48 +111,56 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
-    #[rstest]
-    #[case("open-weather", Provider::OpenWeather)]
-    #[case("weather-api", Provider::WeatherApi)]
-    #[case("accu-weather", Provider::AccuWeather)]
-    #[case("aeris-weather", Provider::AerisWeather)]
-    fn test_from_str_valid_input(#[case] input: &str, #[case] expected: Provider) {
-        let result = Provider::from_str(input);
-        assert_eq!(result, Ok(expected));
+    mod tests_provider {
+        use super::*;
+
+        #[rstest]
+        #[case("open-weather", Provider::OpenWeather)]
+        #[case("weather-api", Provider::WeatherApi)]
+        #[case("accu-weather", Provider::AccuWeather)]
+        #[case("aeris-weather", Provider::AerisWeather)]
+        fn test_from_str_valid_input(#[case] input: &str, #[case] expected: Provider) {
+            let result = Provider::from_str(input);
+            assert_eq!(result, Ok(expected));
+        }
+
+        #[rstest]
+        #[case("invalid-provider")]
+        #[case("unknown-provider")]
+        fn test_from_str_invalid_input(#[case] input: &str) {
+            let result = Provider::from_str(input);
+            assert_eq!(result, Err(ProviderError::ProviderNotFound));
+        }
+
+        #[rstest]
+        #[case(Provider::OpenWeather, "open-weather")]
+        #[case(Provider::WeatherApi, "weather-api")]
+        #[case(Provider::AccuWeather, "accu-weather")]
+        #[case(Provider::AerisWeather, "aeris-weather")]
+        fn test_to_string(#[case] input: Provider, #[case] expected: &str) {
+            let result = input.to_string();
+            assert_eq!(result, expected);
+        }
+
+        #[rstest]
+        #[case([Provider::OpenWeather, Provider::WeatherApi, Provider::AccuWeather, Provider::AerisWeather])]
+        fn test_get_all_variants(#[case] expected: [Provider; 4]) {
+            let variants = Provider::get_all_variants();
+            assert_eq!(variants, expected);
+        }
     }
 
-    #[rstest]
-    #[case("invalid-provider")]
-    #[case("unknown-provider")]
-    fn test_from_str_invalid_input(#[case] input: &str) {
-        let result = Provider::from_str(input);
-        assert_eq!(result, Err(ProviderError::ProviderNotFound));
-    }
+    mod tests_weather_cli {
+        use super::*;
 
-    #[rstest]
-    #[case(Provider::OpenWeather, "open-weather")]
-    #[case(Provider::WeatherApi, "weather-api")]
-    #[case(Provider::AccuWeather, "accu-weather")]
-    #[case(Provider::AerisWeather, "aeris-weather")]
-    fn test_to_string(#[case] input: Provider, #[case] expected: &str) {
-        let result = input.to_string();
-        assert_eq!(result, expected);
-    }
+        #[test]
+        fn test_get_command() {
+            let command = Command::ProviderList;
+            let weather_cli = WeatherCli { command };
 
-    #[rstest]
-    #[case([Provider::OpenWeather, Provider::WeatherApi, Provider::AccuWeather, Provider::AerisWeather])]
-    fn test_get_all_variants(#[case] expected: [Provider; 4]) {
-        let variants = Provider::get_all_variants();
-        assert_eq!(variants, expected);
-    }
+            let result = weather_cli.get_command();
 
-    #[test]
-    fn test_get_command() {
-        let command = Command::ProviderList;
-        let weather_cli = WeatherCLI { command };
-
-        let result = weather_cli.get_command();
-
-        assert_eq!(&Command::ProviderList, result);
+            assert_eq!(&Command::ProviderList, result);
+        }
     }
 }

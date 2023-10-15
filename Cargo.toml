@@ -13,15 +13,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.75"
+async-trait = "0.1.73"
+chrono = "0.4.31"
 clap = { version = "4.4.6", features = ["derive"] }
+color-eyre = { varsion = "0.6.2", default-features = false }
+convert_case = "0.6.0"
+dateparser = "0.2.0"
+indicatif = "0.17.7"
+prettytable-rs = "0.10.0"
 reqwest = "0.11.22"
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 thiserror = "1.0.49"
 tokio = { version = "1.33.0", features = ["full"] }
-tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
 
 [dev-dependencies]
 rstest = "0.18.2"
+assert_cmd = "2.0.12"
+mockito = "1.2.0"
