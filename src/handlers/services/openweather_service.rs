@@ -1,6 +1,5 @@
-use async_trait::async_trait;
-use color_eyre::Result;
 use dateparser::parse as parse_datetime_from_str;
+use narrate::Result;
 use reqwest::Client;
 use std::collections::HashMap;
 
@@ -8,25 +7,24 @@ use super::*;
 use models::WeatherDataError;
 use openweather_model::OpenWeatherData;
 
-#[derive(Error, Debug)]
-pub enum OpenWeatherError {
-    #[error("Failed to send a request to the Open Weather API")]
-    RequestError(#[from] reqwest::Error),
-}
-
-pub struct OpenWeatherApi {
+#[derive(Debug)]
+pub struct OpenWeatherApiService {
     url: String,
     api_key: String,
     client: Client,
 }
 
-impl OpenWeatherApi {
-    pub fn new(client: Client, url: String, api_key: String) -> Self {
-        OpenWeatherApi {
+impl OpenWeatherApiService {
+    pub fn new(client: Client, url: String, api_key: String) -> Result<Self> {
+        if url.is_empty() || api_key.is_empty() {
+            return Err(WeatherApiError::CreationError.into());
+        }
+
+        Ok(OpenWeatherApiService {
             client,
             url,
             api_key,
-        }
+        })
     }
 
     #[allow(dead_code)]
@@ -36,7 +34,7 @@ impl OpenWeatherApi {
 }
 
 #[async_trait]
-impl WeatherApi for OpenWeatherApi {
+impl WeatherApi for OpenWeatherApiService {
     async fn get_weather_data(&self, address: &str, date: &Option<String>) -> Result<WeatherData> {
         let mut params = HashMap::new();
 
@@ -58,15 +56,15 @@ impl WeatherApi for OpenWeatherApi {
             .query(&params)
             .send()
             .await
-            .map_err(OpenWeatherError::RequestError)?;
+            .map_err(WeatherApiError::RequestError)?;
 
-        let openweather_data: OpenWeatherData = serde_json::from_str(
-            &response
-                .text()
-                .await
-                .map_err(OpenWeatherError::RequestError)?,
-        )
-        .map_err(WeatherDataError::JsonParseError)?;
+        let response_body = &response
+            .text()
+            .await
+            .map_err(WeatherApiError::RequestError)?;
+
+        let openweather_data: OpenWeatherData =
+            serde_json::from_str(response_body).map_err(WeatherDataError::JsonParseError)?;
 
         let weather_data = openweather_data.into();
 
@@ -95,7 +93,8 @@ mod tests {
             #[case] expected_url: &str,
         ) {
             let client = Client::new();
-            let api = OpenWeatherApi::new(client, url.to_string(), api_key.to_string());
+            let api =
+                OpenWeatherApiService::new(client, url.to_string(), api_key.to_string()).unwrap();
 
             assert_eq!(api.url, expected_url);
             assert_eq!(api.api_key, api_key);
@@ -113,7 +112,8 @@ mod tests {
             #[case] expected_url: &str,
         ) {
             let client = Client::new();
-            let api = OpenWeatherApi::new(client, url.to_string(), api_key.to_string());
+            let api =
+                OpenWeatherApiService::new(client, url.to_string(), api_key.to_string()).unwrap();
 
             assert_eq!(api.get_url(), expected_url);
         }
@@ -126,9 +126,12 @@ mod tests {
             #[case] expected_url: &str,
         ) {
             let client = Client::new();
-            let api = OpenWeatherApi::new(client, url.to_string(), api_key.to_string());
+            let api = OpenWeatherApiService::new(client, url.to_string(), api_key.to_string())
+                .unwrap_err()
+                .downcast()
+                .unwrap();
 
-            assert_eq!(api.get_url(), expected_url);
+            assert!(matches!(api, WeatherApiError::CreationError));
         }
     }
 
@@ -142,9 +145,9 @@ mod tests {
             date: Option<&str>,
             temp: f32,
             humidity: u8,
-            pressure: u32,
+            pressure: u16,
             wind_speed: f32,
-            visibility: u32,
+            visibility: u16,
             description: &str,
             api_key: &str,
         ) -> (mockito::ServerGuard, Vec<mockito::Mock>) {
@@ -257,9 +260,9 @@ mod tests {
             #[case] date: Option<&str>,
             #[case] temp: f32,
             #[case] humidity: u8,
-            #[case] pressure: u32,
+            #[case] pressure: u16,
             #[case] wind_speed: f32,
-            #[case] visibility: u32,
+            #[case] visibility: u16,
             #[case] description: &str,
             #[case] api_key: &str,
         ) {
@@ -277,11 +280,12 @@ mod tests {
 
             let url = mock_server.url();
             let client = Client::new();
-            let api = OpenWeatherApi::new(
+            let api = OpenWeatherApiService::new(
                 client,
                 url.to_string() + "/data/2.5/weather",
                 api_key.to_string(),
-            );
+            )
+            .unwrap();
 
             let result = api
                 .get_weather_data(address, &date.map(|d| d.to_string()))
@@ -315,9 +319,9 @@ mod tests {
             #[case] date: Option<&str>,
             #[case] temp: f32,
             #[case] humidity: u8,
-            #[case] pressure: u32,
+            #[case] pressure: u16,
             #[case] wind_speed: f32,
-            #[case] visibility: u32,
+            #[case] visibility: u16,
             #[case] description: &str,
             #[case] api_key: &str,
         ) {
@@ -335,11 +339,12 @@ mod tests {
 
             let url = mock_server.url();
             let client = Client::new();
-            let api = OpenWeatherApi::new(
+            let api = OpenWeatherApiService::new(
                 client,
                 url.to_string() + "/data/2.5/weather",
                 api_key.to_string(),
-            );
+            )
+            .unwrap();
 
             let result: DateTimeError = api
                 .get_weather_data(address, &date.map(|d| d.to_string()))
@@ -359,20 +364,21 @@ mod tests {
 
             let url = "http://invalid-url";
             let client = Client::new();
-            let api = OpenWeatherApi::new(
+            let api = OpenWeatherApiService::new(
                 client,
                 url.to_string() + "/data/2.5/weather",
                 api_key.to_string(),
-            );
+            )
+            .unwrap();
 
-            let result: OpenWeatherError = api
+            let result: WeatherApiError = api
                 .get_weather_data(address, &None)
                 .await
                 .unwrap_err()
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(result, OpenWeatherError::RequestError(_)));
+            assert!(matches!(result, WeatherApiError::RequestError(_)));
         }
 
         #[rstest]
@@ -395,11 +401,12 @@ mod tests {
 
             let url = mock_server.url();
             let client = Client::new();
-            let api = OpenWeatherApi::new(
+            let api = OpenWeatherApiService::new(
                 client,
                 url.to_string() + "/data/2.5/weather",
                 api_key.to_string(),
-            );
+            )
+            .unwrap();
 
             let result: WeatherDataError = api
                 .get_weather_data(address, &None)

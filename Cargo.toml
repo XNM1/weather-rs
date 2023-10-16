@@ -1,12 +1,12 @@
 [package]
 name = "weather-rs"
-version = "0.0.3"
+version = "0.0.5"
 authors = ["XNM <artem.shv@proton.me>"]
 description = "A quick and easy CLI tool for weather data fetching from different providers."
 keywords = ["weather", "cli", "tool", "fetch-api"]
 categories = ["command-line-utilities"]
 readme = "README.md"
-repository = "" # TODO
+repository = "https://github.com/XNM1/weather-rs"
 license = "MIT"
 edition = "2021"
 
@@ -16,10 +16,11 @@ edition = "2021"
 async-trait = "0.1.73"
 chrono = "0.4.31"
 clap = { version = "4.4.6", features = ["derive"] }
-color-eyre = { varsion = "0.6.2", default-features = false }
+confy = "0.5.1"
 convert_case = "0.6.0"
 dateparser = "0.2.0"
 indicatif = "0.17.7"
+narrate = "0.4.1"
 prettytable-rs = "0.10.0"
 reqwest = "0.11.22"
 serde = { version = "1.0.188", features = ["derive"] }

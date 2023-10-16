@@ -1,5 +1,5 @@
-use color_eyre::{owo_colors::OwoColorize, Result};
 use convert_case::{Case, Casing};
+use narrate::{colored::*, Result};
 use prettytable::{row, Table};
 
 use super::services::models::WeatherData;
@@ -9,27 +9,27 @@ pub fn table_terminal_view(weather_data: WeatherData) {
     table.add_row(row!["Name", "Value"]);
     table.add_row(row![
         "Description",
-        (weather_data.description.to_case(Case::Title)).green()
+        weather_data.description.to_case(Case::Title).green()
     ]);
     table.add_row(row![
         "Temperature",
-        (weather_data.temp.to_string() + " °C").yellow()
+        format!("{:.2} °C", weather_data.temp).yellow()
     ]);
     table.add_row(row![
         "Humidity",
-        (weather_data.humidity.to_string() + " %").blue()
+        format!("{} %", weather_data.humidity).blue()
     ]);
     table.add_row(row![
         "Pressure",
-        (weather_data.pressure.to_string() + " hPa").green()
+        format!("{} hPa", weather_data.pressure).green()
     ]);
     table.add_row(row![
         "Wind speed",
-        (weather_data.wind_speed.to_string() + " m/sec").cyan()
+        format!("{:.2} m/sec", weather_data.wind_speed).cyan()
     ]);
     table.add_row(row![
         "Visibility",
-        (weather_data.visibility.to_string() + " m").magenta()
+        format!("{} m", weather_data.visibility).magenta()
     ]);
 
     table.printstd();

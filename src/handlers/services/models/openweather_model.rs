@@ -4,7 +4,7 @@ use serde::Deserialize;
 pub struct OpenWeatherData {
     pub main: WeatherMain,
     pub weather: Vec<Weather>,
-    pub visibility: u32,
+    pub visibility: u16,
     pub wind: Wind,
 }
 
@@ -12,7 +12,7 @@ pub struct OpenWeatherData {
 pub struct WeatherMain {
     pub temp: f32,
     pub humidity: u8,
-    pub pressure: u32,
+    pub pressure: u16,
 }
 
 #[derive(Deserialize)]

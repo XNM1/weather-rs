@@ -1,23 +1,39 @@
 mod cli_parser;
+mod config;
 mod handlers;
+mod providers;
 
 use clap::Parser;
-use cli_parser::Command;
-use cli_parser::WeatherCli;
-use color_eyre::Result;
+use narrate::{report, ExitCode, Result};
+
+use cli_parser::{Command, WeatherCli};
+use providers::Provider;
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    color_eyre::config::HookBuilder::default()
-        .display_env_section(false)
-        .install()?;
+async fn main() {
+    let result = entry_point().await;
 
+    if let Err(ref err) = result {
+        report::err_full(err);
+        std::process::exit(err.exit_code());
+    } else {
+        std::process::exit(0);
+    }
+}
+
+async fn entry_point() -> Result<()> {
     let weather_cli = WeatherCli::parse();
     match weather_cli.get_command() {
         Command::ProviderList => {
-            handlers::provider_list_handler(&cli_parser::Provider::OpenWeather)
+            handlers::provider_list_handler(&Provider::OpenWeather);
         }
-        Command::Configure { provider } => {}
+        Command::Configure {
+            provider,
+            url,
+            api_key,
+        } => {
+            handlers::configure_provider(provider, url, api_key);
+        }
         Command::SelectProvider { provider } => {}
         Command::Get {
             address,
@@ -25,8 +41,7 @@ async fn main() -> Result<()> {
             json,
             provider,
         } => {
-            handlers::get_weather_info(address, date, json, &cli_parser::Provider::OpenWeather)
-                .await?
+            handlers::get_weather_info(address, date, json, provider).await?;
         }
     }
 
