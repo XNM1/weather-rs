@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+// Weather Data Section
 #[derive(Deserialize)]
 pub struct OpenWeatherData {
     pub main: WeatherMain,
@@ -24,3 +25,12 @@ pub struct Weather {
 pub struct Wind {
     pub speed: f32,
 }
+// End of Weather Data Section
+
+// Weather Server Error Section
+#[derive(Deserialize)]
+pub struct OpenWeatherErrorData {
+    pub cod: String,
+    pub message: String,
+}
+// End of Weather Server Error Section

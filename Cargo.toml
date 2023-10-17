@@ -1,8 +1,8 @@
 [package]
 name = "weather-rs"
-version = "0.0.5"
+version = "0.0.9"
 authors = ["XNM <artem.shv@proton.me>"]
-description = "A quick and easy CLI tool for weather data fetching from different providers."
+description = "Fast and simple CLI tool for weather data fetching from different providers"
 keywords = ["weather", "cli", "tool", "fetch-api"]
 categories = ["command-line-utilities"]
 readme = "README.md"
@@ -30,5 +30,4 @@ tokio = { version = "1.33.0", features = ["full"] }
 
 [dev-dependencies]
 rstest = "0.18.2"
-assert_cmd = "2.0.12"
 mockito = "1.2.0"

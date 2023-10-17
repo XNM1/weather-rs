@@ -11,8 +11,13 @@ pub struct WeatherCli {
 }
 
 impl WeatherCli {
+    #[allow(dead_code)]
     pub fn get_command(&self) -> &Command {
         &self.command
+    }
+
+    pub fn take_command(self) -> Command {
+        self.command
     }
 }
 
@@ -68,6 +73,16 @@ mod tests {
 
         let result = weather_cli.get_command();
 
-        assert_eq!(&Command::ProviderList, result);
+        assert_eq!(result, &Command::ProviderList);
+    }
+
+    #[rstest]
+    fn test_take_command() {
+        let command = Command::ProviderList;
+        let weather_cli = WeatherCli { command };
+
+        let result = weather_cli.take_command();
+
+        assert_eq!(result, Command::ProviderList);
     }
 }

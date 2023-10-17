@@ -1,10 +1,10 @@
 use dateparser::parse as parse_datetime_from_str;
 use narrate::Result;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use std::collections::HashMap;
 
 use super::{
-    models::weatherapi_model::{WeatherApiData, WeatherApiHistoryData},
+    models::weatherapi_model::{WeatherApiData, WeatherApiErrorData, WeatherApiHistoryData},
     *,
 };
 
@@ -16,9 +16,13 @@ pub struct WeatherApiService {
 }
 
 impl WeatherApiService {
-    pub fn new(client: Client, url: String, api_key: String) -> Result<Self> {
+    pub fn new(client: Client, mut url: String, api_key: String) -> Result<Self> {
         if url.is_empty() || api_key.is_empty() {
-            return Err(WeatherApiError::CreationError.into());
+            return Err(WeatherApiError::Creation.into());
+        }
+
+        if url.ends_with('/') {
+            url.pop();
         }
 
         Ok(WeatherApiService {
@@ -43,7 +47,7 @@ impl WeatherApi for WeatherApiService {
         params.insert("key", self.api_key.to_owned());
         if let Some(date) = date {
             let timestamp = parse_datetime_from_str(date)
-                .map_err(|_| DateTimeError::ParseError)?
+                .map_err(|_| DateTimeError::Parse)?
                 .timestamp();
             params.insert("unixdt", timestamp.to_string());
         }
@@ -59,24 +63,28 @@ impl WeatherApi for WeatherApiService {
             .query(&params)
             .send()
             .await
-            .map_err(WeatherApiError::RequestError)?;
+            .map_err(WeatherApiError::Request)?;
 
-        let response_body = &response
-            .text()
-            .await
-            .map_err(WeatherApiError::RequestError)?;
+        let status_code = response.status();
 
-        // panic!("{}", response_body);
+        let response_body = &response.text().await.map_err(WeatherApiError::Request)?;
 
-        let weather_data = match date {
-            Some(_) => serde_json::from_str::<WeatherApiHistoryData>(response_body)
-                .map_err(WeatherDataError::JsonParseError)?
-                .into(),
-            None => serde_json::from_str::<WeatherApiData>(response_body)
-                .map_err(WeatherDataError::JsonParseError)?
-                .into(),
-        };
+        if status_code == StatusCode::OK {
+            let weather_data = match date {
+                Some(_) => serde_json::from_str::<WeatherApiHistoryData>(response_body)
+                    .map_err(WeatherDataError::JsonParse)?
+                    .into(),
+                None => serde_json::from_str::<WeatherApiData>(response_body)
+                    .map_err(WeatherDataError::JsonParse)?
+                    .into(),
+            };
 
-        Ok(weather_data)
+            Ok(weather_data)
+        } else {
+            let weather_error_data: WeatherApiErrorData =
+                serde_json::from_str(response_body).map_err(WeatherDataError::JsonParse)?;
+
+            Err(WeatherApiError::Server(weather_error_data.error.message).into())
+        }
     }
 }

@@ -3,7 +3,10 @@ use std::fmt;
 use std::str::FromStr;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+pub const NOT_IMPLEMENTED_PROVIDERS: [&Provider; 2] =
+    [&Provider::AccuWeather, &Provider::AerisWeather];
+
+#[derive(Error, Debug)]
 pub enum ProviderError {
     #[error("Weather provider not found; use the command 'weather-rs provider-list' to get a list of all available providers")]
     ProviderNotFound,
@@ -13,7 +16,6 @@ pub enum ProviderError {
 }
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
-/// Enum for available providers
 pub enum Provider {
     #[default]
     OpenWeather,
@@ -70,16 +72,16 @@ mod tests {
     #[case("accu-weather", Provider::AccuWeather)]
     #[case("aeris-weather", Provider::AerisWeather)]
     fn test_from_str_valid_input(#[case] input: &str, #[case] expected: Provider) {
-        let result = Provider::from_str(input);
-        assert_eq!(result, Ok(expected));
+        let result = Provider::from_str(input).unwrap();
+        assert_eq!(result, expected);
     }
 
     #[rstest]
     #[case("invalid-provider")]
     #[case("unknown-provider")]
     fn test_from_str_invalid_input(#[case] input: &str) {
-        let result = Provider::from_str(input);
-        assert_eq!(result, Err(ProviderError::ProviderNotFound));
+        let result = Provider::from_str(input).unwrap_err();
+        assert!(matches!(result, ProviderError::ProviderNotFound));
     }
 
     #[rstest]

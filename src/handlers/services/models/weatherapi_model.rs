@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+// Weather Data Section
 #[derive(Deserialize)]
 pub struct WeatherApiData {
     pub current: WeatherCurrent,
@@ -19,7 +20,9 @@ pub struct WeatherCurrent {
 pub struct WeatherCondition {
     pub text: String,
 }
+// End of Weather Data Section
 
+// Weather History Data Section
 #[derive(Deserialize)]
 pub struct WeatherApiHistoryData {
     pub forecast: HistoryForecast,
@@ -34,3 +37,17 @@ pub struct HistoryForecast {
 pub struct HistoryForecastDay {
     pub hour: Vec<WeatherCurrent>,
 }
+// End of Weather History Data Secction
+
+// Weather Server Error Section
+#[derive(Deserialize)]
+pub struct WeatherApiErrorData {
+    pub error: DataError,
+}
+
+#[derive(Deserialize)]
+pub struct DataError {
+    pub code: u16,
+    pub message: String,
+}
+// End of Weather Server Error Section

@@ -12,7 +12,7 @@ use self::weatherapi_model::WeatherApiHistoryData;
 #[derive(Error, Debug)]
 pub enum WeatherDataError {
     #[error("Failed to parse JSON response")]
-    JsonParseError(#[from] serde_json::Error),
+    JsonParse(#[from] serde_json::Error),
 }
 
 #[derive(Serialize, Debug)]

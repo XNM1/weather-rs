@@ -1,9 +1,9 @@
 use dateparser::parse as parse_datetime_from_str;
 use narrate::Result;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use std::collections::HashMap;
 
-use super::*;
+use super::{models::openweather_model::OpenWeatherErrorData, *};
 use models::WeatherDataError;
 use openweather_model::OpenWeatherData;
 
@@ -15,9 +15,13 @@ pub struct OpenWeatherApiService {
 }
 
 impl OpenWeatherApiService {
-    pub fn new(client: Client, url: String, api_key: String) -> Result<Self> {
+    pub fn new(client: Client, mut url: String, api_key: String) -> Result<Self> {
         if url.is_empty() || api_key.is_empty() {
-            return Err(WeatherApiError::CreationError.into());
+            return Err(WeatherApiError::Creation.into());
+        }
+
+        if url.ends_with('/') {
+            url.pop();
         }
 
         Ok(OpenWeatherApiService {
@@ -43,7 +47,7 @@ impl WeatherApi for OpenWeatherApiService {
         params.insert("appid", self.api_key.to_owned());
         if let Some(date) = date {
             let timestamp = parse_datetime_from_str(date)
-                .map_err(|_| DateTimeError::ParseError)?
+                .map_err(|_| DateTimeError::Parse)?
                 .timestamp();
             params.insert("dt", timestamp.to_string());
         }
@@ -56,19 +60,25 @@ impl WeatherApi for OpenWeatherApiService {
             .query(&params)
             .send()
             .await
-            .map_err(WeatherApiError::RequestError)?;
+            .map_err(WeatherApiError::Request)?;
 
-        let response_body = &response
-            .text()
-            .await
-            .map_err(WeatherApiError::RequestError)?;
+        let status_code = response.status();
 
-        let openweather_data: OpenWeatherData =
-            serde_json::from_str(response_body).map_err(WeatherDataError::JsonParseError)?;
+        let response_body = &response.text().await.map_err(WeatherApiError::Request)?;
 
-        let weather_data = openweather_data.into();
+        if status_code == StatusCode::OK {
+            let openweather_data: OpenWeatherData =
+                serde_json::from_str(response_body).map_err(WeatherDataError::JsonParse)?;
 
-        Ok(weather_data)
+            let weather_data = openweather_data.into();
+
+            Ok(weather_data)
+        } else {
+            let weather_error_data: OpenWeatherErrorData =
+                serde_json::from_str(response_body).map_err(WeatherDataError::JsonParse)?;
+
+            Err(WeatherApiError::Server(weather_error_data.message).into())
+        }
     }
 }
 
@@ -119,11 +129,10 @@ mod tests {
         }
 
         #[rstest]
-        #[case("", "", "")]
+        #[case("", "")]
         fn test_openweather_api_with_empty_url_and_api_key(
             #[case] url: &str,
             #[case] api_key: &str,
-            #[case] expected_url: &str,
         ) {
             let client = Client::new();
             let api = OpenWeatherApiService::new(client, url.to_string(), api_key.to_string())
@@ -131,7 +140,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(api, WeatherApiError::CreationError));
+            assert!(matches!(api, WeatherApiError::Creation));
         }
     }
 
@@ -198,61 +207,11 @@ mod tests {
         }
 
         #[rstest]
-        #[case(
-            "CityName",
-            None,
-            200.0,
-            50,
-            1013,
-            5.0,
-            10000,
-            "Cloudy",
-            "hdx19j9qjcsd90jmwc123fg"
-        )]
-        #[case(
-            "AnotherCity",
-            Some("2023-10-15"),
-            22.0,
-            60,
-            1005,
-            12.0,
-            8000,
-            "Rainy",
-            "fo2mjeqjssdj0jmlc123fg"
-        )]
-        #[case(
-            "ThirdCity",
-            Some("2023-10-16"),
-            25.0,
-            70,
-            1010,
-            8.0,
-            12000,
-            "Sunny",
-            "a1b2c3d4e5f6g7h8"
-        )]
-        #[case(
-            "FourthCity",
-            None,
-            18.5,
-            45,
-            1015,
-            6.5,
-            9500,
-            "Partly Cloudy",
-            "xyz987pqr321lmn456"
-        )]
-        #[case(
-            "FifthCity",
-            Some("2023-10-17"),
-            30.5,
-            80,
-            1002,
-            15.0,
-            6000,
-            "Stormy",
-            "abc123def456ghi789"
-        )]
+        #[case("CityName", None, 200.0, 50, 1013, 5.0, 10000, "Cloudy")]
+        #[case("AnotherCity", Some("2023-10-15"), 22.0, 60, 1005, 12.0, 8000, "Rainy")]
+        #[case("ThirdCity", Some("2023-10-16"), 25.0, 70, 1010, 8.0, 12000, "Sunny")]
+        #[case("FourthCity", None, 18.5, 45, 1015, 6.5, 9500, "Partly Cloudy")]
+        #[case("FifthCity", Some("2023-10-17"), 30.5, 80, 1002, 15.0, 6000, "Stormy")]
         #[tokio::test]
         #[allow(clippy::too_many_arguments)]
         async fn test_get_weather_data(
@@ -264,8 +223,8 @@ mod tests {
             #[case] wind_speed: f32,
             #[case] visibility: u16,
             #[case] description: &str,
-            #[case] api_key: &str,
         ) {
+            let api_key = "SomeApiKey";
             let (mock_server, _) = mock_openweather_server(
                 address,
                 date,
@@ -309,8 +268,7 @@ mod tests {
             1005,
             12.0,
             8000,
-            "Rainy",
-            "fo2mjeqjssdj0jmlc123fg"
+            "Rainy"
         )]
         #[tokio::test]
         #[allow(clippy::too_many_arguments)]
@@ -323,8 +281,8 @@ mod tests {
             #[case] wind_speed: f32,
             #[case] visibility: u16,
             #[case] description: &str,
-            #[case] api_key: &str,
         ) {
+            let api_key = "SomeApiKey";
             let (mock_server, _) = mock_openweather_server(
                 address,
                 date,
@@ -353,7 +311,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert_eq!(result, DateTimeError::ParseError);
+            assert!(matches!(result, DateTimeError::Parse));
         }
 
         #[rstest]
@@ -378,7 +336,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(result, WeatherApiError::RequestError(_)));
+            assert!(matches!(result, WeatherApiError::Request(_)));
         }
 
         #[rstest]
@@ -386,6 +344,7 @@ mod tests {
         async fn test_get_weather_data_json_parse_error() {
             let address = "SomeCity";
             let api_key = "123";
+
             let mut mock_server = mockito::Server::new();
             mock_server
                 .mock("GET", "/data/2.5/weather")
@@ -415,7 +374,50 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(result, WeatherDataError::JsonParseError(_)));
+            assert!(matches!(result, WeatherDataError::JsonParse(_)));
+        }
+
+        #[rstest]
+        #[tokio::test]
+        async fn test_get_weather_data_server_response_error() {
+            let address = "Invalid City";
+            let api_key = "123";
+            let mock_response = json!(
+            {
+                "cod": "404",
+                "message": "city not found"
+            });
+
+            let mut mock_server = mockito::Server::new();
+            mock_server
+                .mock("GET", "/data/2.5/weather")
+                .match_query(mockito::Matcher::UrlEncoded("q".into(), address.into()))
+                .match_query(mockito::Matcher::UrlEncoded(
+                    "units".into(),
+                    "metric".into(),
+                ))
+                .match_query(mockito::Matcher::UrlEncoded("appid".into(), api_key.into()))
+                .with_status(404)
+                .with_body(mock_response.to_string())
+                .create();
+
+            let url = mock_server.url();
+            let client = Client::new();
+            let api = OpenWeatherApiService::new(
+                client,
+                url.to_string() + "/data/2.5/weather",
+                api_key.to_string(),
+            )
+            .unwrap();
+
+            let result: WeatherApiError = api
+                .get_weather_data(address, &None)
+                .await
+                .unwrap_err()
+                .downcast()
+                .unwrap();
+
+            assert!(matches!(result, WeatherApiError::Server(_)));
         }
     }
 }
