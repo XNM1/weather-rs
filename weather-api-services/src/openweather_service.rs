@@ -88,12 +88,9 @@ impl WeatherApi for OpenWeatherApiService {
         let client = &self.client;
         let url = &self.url;
 
-        let response = client
-            .get(url)
-            .query(&params)
-            .send()
-            .await
-            .map_err(WeatherApiError::Request)?;
+        let response = client.get(url).query(&params).send().await.map_err(|err| {
+            WeatherApiError::Request(err, "Open Weather API".yellow().to_string())
+        })?;
 
         let status_code = response.status();
 
@@ -334,7 +331,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(result, WeatherApiError::Request(_)));
+            assert!(matches!(result, WeatherApiError::Request(..)));
         }
 
         #[rstest]

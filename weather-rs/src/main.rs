@@ -1,7 +1,13 @@
+/// The `cli_parser` module handles the parsing of command-line arguments and options for the weather-rs application.
 mod cli_parser;
+/// The `config` module defines data structures for handling configuration settings in the weather-rs application.
 mod config;
+/// The `handlers` module contains functions that handle various commands and operations in the weather-rs application.
 mod handlers;
+/// The `providers` module defines enum for weather data providers implementations for the weather-rs application.
 mod providers;
+/// The `views` module contains functions responsible for displaying weather data in different output views,
+/// such as table view and JSON view, in the weather-rs application.
 mod views;
 
 use clap::Parser;
@@ -12,9 +18,16 @@ use narrate::{colored::Colorize, report, ExitCode};
 use cli_parser::{Command, WeatherCli};
 use providers::{Provider, NOT_IMPLEMENTED_PROVIDERS};
 
+/// The name of the application.
 const APP_NAME: &str = "weather-rs";
+
+/// The name of the configuration file.
 const CONFIG_NAME: &str = "config";
 
+/// Main function of the weather-rs application.
+///
+/// This is the main function of the weather-rs application. It initializes the application, runs the main logic,
+/// and handles any errors that may occur during execution.
 #[tokio::main]
 async fn main() {
     let result = entry_point().await;
@@ -27,6 +40,14 @@ async fn main() {
     }
 }
 
+/// The entry point of the weather-rs application.
+///
+/// This function serves as the entry point of the application and is responsible for initializing the application,
+/// parsing command-line arguments, and executing the appropriate command handler based on the parsed command.
+///
+/// # Returns
+///
+/// A `Result` indicating the success or failure of the application's main logic.
 async fn entry_point() -> Result<()> {
     let weather_cli = WeatherCli::parse();
     let mut config: MainConfig = confy::load(APP_NAME, CONFIG_NAME)?;

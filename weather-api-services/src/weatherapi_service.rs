@@ -78,7 +78,7 @@ impl WeatherApi for WeatherApiService {
         params.insert("key", self.api_key.to_owned());
         if let Some(date) = date {
             let timestamp = parse_datetime_from_str(date)
-                .map_err(|_| DateTimeError::Parse)?
+                .map_err(|_| DateTimeError::Parse(date.yellow().to_string()))?
                 .timestamp();
             params.insert("unixdt", timestamp.to_string());
         }
@@ -94,7 +94,7 @@ impl WeatherApi for WeatherApiService {
             .query(&params)
             .send()
             .await
-            .map_err(WeatherApiError::Request)?;
+            .map_err(|err| WeatherApiError::Request(err, "Weather API".yellow().to_string()))?;
 
         let status_code = response.status();
 
@@ -409,7 +409,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(result, DateTimeError::Parse));
+            assert!(matches!(result, DateTimeError::Parse(_)));
         }
 
         #[rstest]
@@ -429,7 +429,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
-            assert!(matches!(result, WeatherApiError::Request(_)));
+            assert!(matches!(result, WeatherApiError::Request(..)));
         }
 
         #[rstest]

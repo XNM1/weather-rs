@@ -11,9 +11,17 @@ use weatherapi_model::WeatherApiData;
 
 use self::weatherapi_model::WeatherApiHistoryData;
 
-/// Represents an error that occurs when there is an issue with parsing JSON response data
+/// Represents an error that occurs when there is an issue with parsing JSON response data.
 #[derive(Error, Debug)]
 pub enum WeatherDataError {
+    /// An error indicating a failure to parse JSON response.
+    ///
+    /// This error occurs when there is an issue with parsing JSON response data,
+    /// and the specific `serde_json::Error` is included as a parameter.
+    ///
+    /// # Parameters
+    ///
+    /// * `0` - The `serde_json::Error` indicating the specific JSON parsing error.
     #[error("Failed to parse JSON response")]
     JsonParse(#[from] serde_json::Error),
 }

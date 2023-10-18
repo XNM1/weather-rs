@@ -5,6 +5,14 @@ use prettytable::{row, Table};
 
 use weather_api_services::models::WeatherData;
 
+/// Renders weather data in a tabular format for display in the terminal.
+///
+/// This function takes weather data as input and displays it in a tabular format.
+/// It creates a table with columns "Name" and "Value" to present the weather data attributes.
+///
+/// # Arguments
+///
+/// * `weather_data` - The `WeatherData` structure containing weather-related information to be displayed.
 pub fn table_terminal_view(weather_data: WeatherData) {
     let mut table = Table::new();
     table.add_row(row!["Name", "Value"]);
@@ -36,6 +44,17 @@ pub fn table_terminal_view(weather_data: WeatherData) {
     table.printstd();
 }
 
+/// Renders weather data in JSON format for display in the terminal.
+///
+/// This function takes weather data as input, serializes it into JSON format, and prints it to the terminal.
+///
+/// # Arguments
+///
+/// * `weather_data` - The `WeatherData` structure containing weather-related information to be displayed in JSON format.
+///
+/// # Returns
+///
+/// A `Result` indicating success or an error when serializing the weather data into JSON format.
 pub fn json_terminal_view(weather_data: WeatherData) -> Result<()> {
     println!("{}", serde_json::to_string(&weather_data)?);
 

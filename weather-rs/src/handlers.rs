@@ -12,6 +12,16 @@ use weather_api_services::{
     openweather_service::OpenWeatherApiService, weatherapi_service::WeatherApiService,
 };
 
+/// Handles the 'provider-list' command to display the status of weather data providers.
+///
+/// This function displays the status of weather data providers, indicating whether each provider
+/// is not implemented, configured, or not configured. It also shows which provider is currently selected.
+///
+/// # Arguments
+///
+/// * `selected_provider` - The selected weather data provider.
+/// * `configured_providers` - A list of configured weather data providers.
+/// * `not_implemented_providers` - A list of weather data providers that are not implemented.
 pub fn provider_list_handler(
     selected_provider: &Provider,
     configured_providers: Vec<&Provider>,
@@ -38,6 +48,22 @@ pub fn provider_list_handler(
     println!("\nCurrently supported providers is\n\tOpen Weather ({}; example url: '{}'),\n\tWeather API ({}; example url: '{}')", "v2".blue(), "https://api.openweathermap.org/data/2.5/weather".green(), "v1".blue(), "https://api.weatherapi.com/v1".green());
 }
 
+/// Fetches weather information from a selected provider and displays it in the terminal.
+///
+/// This function fetches weather information for a given address and optional date using the selected provider.
+/// It supports JSON output and displays the weather data using the provided `WeatherData` struct.
+///
+/// # Arguments
+///
+/// * `address` - The address for which weather information is requested.
+/// * `date` - An optional date parameter for historical weather data.
+/// * `json` - A flag to indicate if the output format should be JSON.
+/// * `provider` - The selected weather data provider.
+/// * `config` - The application's main configuration.
+///
+/// # Returns
+///
+/// A `Result` indicating success or an error when fetching and displaying weather information.
 pub async fn get_weather_info(
     address: &str,
     date: &Option<String>,
@@ -89,6 +115,17 @@ pub async fn get_weather_info(
     Ok(())
 }
 
+/// Configures the URL and API key for a weather data provider.
+///
+/// This function updates the application configuration to include the URL and API key for a specific provider.
+/// But this function DOES NOT save the configuration itself!
+///
+/// # Arguments
+///
+/// * `cfg` - A mutable reference to the main configuration.
+/// * `provider` - The selected weather data provider.
+/// * `url` - The URL for the provider's API.
+/// * `api_key` - The API key for the provider's API.
 pub fn configure_provider(cfg: &mut MainConfig, provider: &Provider, url: String, api_key: String) {
     let provider_config: Option<ProviderConfig> = Some(ProviderConfig { url, api_key });
 
@@ -100,6 +137,15 @@ pub fn configure_provider(cfg: &mut MainConfig, provider: &Provider, url: String
     }
 }
 
+/// Selects the active weather data provider.
+///
+/// This function updates the application configuration to select a specific provider as the active provider.
+/// But this function DOES NOT save the configuration itself!
+///
+/// # Arguments
+///
+/// * `cfg` - A mutable reference to the main configuration.
+/// * `provider` - The selected weather data provider.
 pub fn select_provider(cfg: &mut MainConfig, provider: Provider) {
     cfg.selected_provider = provider;
 }
