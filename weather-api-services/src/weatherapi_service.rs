@@ -8,6 +8,7 @@ use super::{
     *,
 };
 
+/// Struct that implement the `WeatherApi` trait and interacts with the Weather API.
 #[derive(Debug)]
 pub struct WeatherApiService {
     url: String,
@@ -15,12 +16,25 @@ pub struct WeatherApiService {
     client: Client,
 }
 
+/// `WeatherApiService` constructors and methods
 impl WeatherApiService {
+    /// Creates a new instance of `WeatherApiService`.
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - The HTTP client (reqwest) to use for making requests.
+    /// * `url` - The base URL for the weather data service.
+    /// * `api_key` - The API key required for authentication.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the initialized `WeatherApiService` or an error if initialization fails.
     pub fn new(client: Client, mut url: String, api_key: String) -> Result<Self> {
         if url.is_empty() || api_key.is_empty() {
             return Err(WeatherApiError::Creation.into());
         }
 
+        // url cleaning
         if url.ends_with('/') {
             url.pop();
         }
@@ -32,14 +46,30 @@ impl WeatherApiService {
         })
     }
 
+    /// Retrieves the URL of the Weather API service.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the URL string.
     #[allow(dead_code)]
     pub fn get_url(&self) -> &str {
         &self.url
     }
 }
 
+/// An implementation of the `WeatherApi` trait for Weather API service.
 #[async_trait]
 impl WeatherApi for WeatherApiService {
+    /// Asynchronously retrieves weather data for a specific address and date (if provided).
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - A string representing the address for which weather data is requested.
+    /// * `date` - An optional string containing the date for historical weather data. Pass `None` for current weather.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the retrieved weather data or an error if the request fails.
     async fn get_weather_data(&self, address: &str, date: &Option<String>) -> Result<WeatherData> {
         let mut params = HashMap::new();
 

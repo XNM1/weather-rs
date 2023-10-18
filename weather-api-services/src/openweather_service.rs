@@ -7,6 +7,7 @@ use super::{models::openweather_model::OpenWeatherErrorData, *};
 use models::WeatherDataError;
 use openweather_model::OpenWeatherData;
 
+/// Struct that implement the `WeatherApi` trait and interacts with the OpenWeather API.
 #[derive(Debug)]
 pub struct OpenWeatherApiService {
     url: String,
@@ -14,12 +15,25 @@ pub struct OpenWeatherApiService {
     client: Client,
 }
 
+/// `OpenWeatherApiService` constructors and methods
 impl OpenWeatherApiService {
+    /// Creates a new instance of `OpenWeatherApiService`.
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - The HTTP client (reqwest) to use for making requests.
+    /// * `url` - The base URL for the OpenWeather API.
+    /// * `api_key` - The API key required for authentication.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the initialized `OpenWeatherApiService` or an error if initialization fails.
     pub fn new(client: Client, mut url: String, api_key: String) -> Result<Self> {
         if url.is_empty() || api_key.is_empty() {
             return Err(WeatherApiError::Creation.into());
         }
 
+        // url cleaning
         if url.ends_with('/') {
             url.pop();
         }
@@ -31,14 +45,30 @@ impl OpenWeatherApiService {
         })
     }
 
+    /// Retrieves the URL of the OpenWeather API service.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the URL string.
     #[allow(dead_code)]
     pub fn get_url(&self) -> &str {
         &self.url
     }
 }
 
+/// An implementation of the `WeatherApi` trait for OpenWeather API service.
 #[async_trait]
 impl WeatherApi for OpenWeatherApiService {
+    /// Asynchronously retrieves weather data for a specific address and date (if provided).
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - A string representing the address for which weather data is requested.
+    /// * `date` - An optional string containing the date for historical weather data. Pass `None` for current weather.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the retrieved weather data or an error if the request fails.
     async fn get_weather_data(&self, address: &str, date: &Option<String>) -> Result<WeatherData> {
         let mut params = HashMap::new();
 

@@ -1,4 +1,6 @@
+/// Module that contains structs that represent data from OpenWeather API provider
 pub mod openweather_model;
+/// Module that contains structs that represent data from Weather API provider
 pub mod weatherapi_model;
 
 use serde::Serialize;
@@ -9,12 +11,14 @@ use weatherapi_model::WeatherApiData;
 
 use self::weatherapi_model::WeatherApiHistoryData;
 
+/// Represents an error that occurs when there is an issue with parsing JSON response data
 #[derive(Error, Debug)]
 pub enum WeatherDataError {
     #[error("Failed to parse JSON response")]
     JsonParse(#[from] serde_json::Error),
 }
 
+/// Represents weather data with temperature, humidity, pressure, wind speed, visibility, and description.
 #[derive(Serialize, Debug)]
 pub struct WeatherData {
     pub temp: f32,
@@ -25,6 +29,7 @@ pub struct WeatherData {
     pub description: String,
 }
 
+/// Converts data from OpenWeather API to `WeatherData`
 impl From<OpenWeatherData> for WeatherData {
     fn from(openweather_data: OpenWeatherData) -> Self {
         let main = openweather_data.main;
@@ -42,6 +47,7 @@ impl From<OpenWeatherData> for WeatherData {
     }
 }
 
+/// Converts data from Weather API to `WeatherData`.
 impl From<WeatherApiData> for WeatherData {
     fn from(weatherapi_data: WeatherApiData) -> Self {
         let current = weatherapi_data.current;
@@ -57,6 +63,7 @@ impl From<WeatherApiData> for WeatherData {
     }
 }
 
+/// Converts data for specific date in history from Weather API to `WeatherData`.
 impl From<WeatherApiHistoryData> for WeatherData {
     fn from(mut weatherapi_history_data: WeatherApiHistoryData) -> Self {
         let currents = weatherapi_history_data
@@ -78,10 +85,12 @@ impl From<WeatherApiHistoryData> for WeatherData {
     }
 }
 
+/// Converts kilometers per hour to meters per second.
 fn km_per_hour_to_m_per_sec(km_per_hour: f32) -> f32 {
     km_per_hour * (1000.0 / 3600.0)
 }
 
+/// Converts kilometers to meters.
 fn km_to_m(km: f32) -> u16 {
     (km * 1000.0) as u16
 }
