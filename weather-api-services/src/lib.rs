@@ -36,6 +36,10 @@ pub enum WeatherApiError {
     /// Represents an error when processing the body text from the response.
     #[error("Can't process the body text from the response")]
     BodyText,
+
+    /// Represents an error when the provider don't support a specific feature.
+    #[error("Service provider doesn't support a feature '{0}'")]
+    Feature(String),
 }
 
 /// The `WeatherApi` trait defines the contract for retrieving weather data for a given address and optional date.
