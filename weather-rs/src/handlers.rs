@@ -1,23 +1,24 @@
-mod services;
-mod views;
-
 use std::time::Duration;
 
 use indicatif::{ProgressBar, ProgressStyle};
-use narrate::{colored::*, Result};
+use narrate::anyhow::Result;
+use narrate::colored::Colorize;
 
-use self::services::WeatherApi;
-use self::services::{
+use crate::config::{ConfigError, MainConfig, ProviderConfig};
+use crate::providers::{Provider, ProviderError};
+use crate::views;
+use weather_api_services::WeatherApi;
+use weather_api_services::{
     openweather_service::OpenWeatherApiService, weatherapi_service::WeatherApiService,
 };
-use crate::config::config_model::{ConfigError, MainConfig, ProviderConfig};
-use crate::providers::{Provider, ProviderError};
 
 pub fn provider_list_handler(
     selected_provider: &Provider,
     configured_providers: Vec<&Provider>,
     not_implemented_providers: Vec<&Provider>,
 ) {
+    println!("Current status of providers: ");
+
     for provider in Provider::get_all_variants() {
         let provider_str = if not_implemented_providers.contains(&&provider) {
             format!("{} (not implemented)", provider).red()
@@ -33,6 +34,8 @@ pub fn provider_list_handler(
             println!(" {}", provider_str);
         }
     }
+
+    println!("\nCurrently supported providers is\n\tOpen Weather ({}; example url: '{}'),\n\tWeather API ({}; example url: '{}')", "v2".blue(), "https://api.openweathermap.org/data/2.5/weather".green(), "v1".blue(), "https://api.weatherapi.com/v1".green());
 }
 
 pub async fn get_weather_info(

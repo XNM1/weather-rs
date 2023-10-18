@@ -2,8 +2,8 @@ pub mod models;
 pub mod openweather_service;
 pub mod weatherapi_service;
 
+use anyhow::Result;
 use async_trait::async_trait;
-use narrate::Result;
 use thiserror::Error;
 
 use models::*;
@@ -16,14 +16,17 @@ pub enum DateTimeError {
 
 #[derive(Error, Debug)]
 pub enum WeatherApiError {
-    #[error("Failed to create an API client; check url and api key for the API Service in 'weather-rs/config.toml' file in your config directory")]
+    #[error("Failed to create an API client; can be invalid 'url' or 'api_key'")]
     Creation,
 
-    #[error("Failed to send a request to the Weather API; check url and api key for the API Service in 'weather-rs/config.toml' file in your config directory")]
+    #[error("Failed to send a request to the Weather API; can be invalid 'url' or 'api_key'")]
     Request(#[from] reqwest::Error),
 
     #[error("Provider server response error '{0}'")]
     Server(String),
+
+    #[error("Can't process the body text from the response")]
+    BodyText,
 }
 
 #[async_trait]

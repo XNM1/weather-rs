@@ -1,5 +1,5 @@
+use anyhow::Result;
 use dateparser::parse as parse_datetime_from_str;
-use narrate::Result;
 use reqwest::{Client, StatusCode};
 use std::collections::HashMap;
 
@@ -64,7 +64,10 @@ impl WeatherApi for OpenWeatherApiService {
 
         let status_code = response.status();
 
-        let response_body = &response.text().await.map_err(WeatherApiError::Request)?;
+        let response_body = &response
+            .text()
+            .await
+            .map_err(|_| WeatherApiError::BodyText)?;
 
         if status_code == StatusCode::OK {
             let openweather_data: OpenWeatherData =
@@ -92,7 +95,7 @@ mod tests {
 
         #[rstest]
         #[case(
-            "https://api.openweathermap.org",
+            "https://api.openweathermap.org/",
             "my_openweather_api_key",
             "https://api.openweathermap.org"
         )]
@@ -130,6 +133,8 @@ mod tests {
 
         #[rstest]
         #[case("", "")]
+        #[case("", "some key")]
+        #[case("some url", "")]
         fn test_openweather_api_with_empty_url_and_api_key(
             #[case] url: &str,
             #[case] api_key: &str,
@@ -151,7 +156,6 @@ mod tests {
         #[allow(clippy::too_many_arguments)]
         fn mock_openweather_server(
             address: &str,
-            date: Option<&str>,
             temp: f32,
             humidity: u8,
             pressure: u16,
@@ -159,7 +163,7 @@ mod tests {
             visibility: u16,
             description: &str,
             api_key: &str,
-        ) -> (mockito::ServerGuard, Vec<mockito::Mock>) {
+        ) -> (mockito::ServerGuard, mockito::Mock) {
             let mock_response = json!(
                 {
                     "main": {"temp": temp, "humidity": humidity, "pressure": pressure},
@@ -171,24 +175,7 @@ mod tests {
 
             let mut mock_server = mockito::Server::new();
 
-            let mock_endpoint_with_date = mock_server
-                .mock("GET", "/data/2.5/weather")
-                .match_query(mockito::Matcher::UrlEncoded("q".into(), address.into()))
-                .match_query(mockito::Matcher::UrlEncoded(
-                    "units".into(),
-                    "metric".into(),
-                ))
-                .match_query(mockito::Matcher::UrlEncoded("appid".into(), api_key.into()))
-                .match_query(mockito::Matcher::UrlEncoded(
-                    "dt".into(),
-                    date.unwrap_or_default().into(),
-                ))
-                .with_status(200)
-                .with_header("content-type", "text/json")
-                .with_body(mock_response.to_string())
-                .create();
-
-            let mock_endpoint_wihtout_date = mock_server
+            let mock_endpoint = mock_server
                 .mock("GET", "/data/2.5/weather")
                 .match_query(mockito::Matcher::UrlEncoded("q".into(), address.into()))
                 .match_query(mockito::Matcher::UrlEncoded(
@@ -201,22 +188,16 @@ mod tests {
                 .with_body(mock_response.to_string())
                 .create();
 
-            let mock_endpoints = vec![mock_endpoint_with_date, mock_endpoint_wihtout_date];
-
-            (mock_server, mock_endpoints)
+            (mock_server, mock_endpoint)
         }
 
         #[rstest]
-        #[case("CityName", None, 200.0, 50, 1013, 5.0, 10000, "Cloudy")]
-        #[case("AnotherCity", Some("2023-10-15"), 22.0, 60, 1005, 12.0, 8000, "Rainy")]
-        #[case("ThirdCity", Some("2023-10-16"), 25.0, 70, 1010, 8.0, 12000, "Sunny")]
-        #[case("FourthCity", None, 18.5, 45, 1015, 6.5, 9500, "Partly Cloudy")]
-        #[case("FifthCity", Some("2023-10-17"), 30.5, 80, 1002, 15.0, 6000, "Stormy")]
+        #[case("CityName", 200.0, 50, 1013, 5.0, 10000, "Cloudy")]
+        #[case("FourthCity", 18.5, 45, 1015, 6.5, 9500, "Partly Cloudy")]
         #[tokio::test]
         #[allow(clippy::too_many_arguments)]
         async fn test_get_weather_data(
             #[case] address: &str,
-            #[case] date: Option<&str>,
             #[case] temp: f32,
             #[case] humidity: u8,
             #[case] pressure: u16,
@@ -225,9 +206,100 @@ mod tests {
             #[case] description: &str,
         ) {
             let api_key = "SomeApiKey";
-            let (mock_server, _) = mock_openweather_server(
+            let (mock_server, mock_endpoint) = mock_openweather_server(
                 address,
-                date,
+                temp,
+                humidity,
+                pressure,
+                wind_speed,
+                visibility,
+                description,
+                api_key,
+            );
+
+            let url = mock_server.url();
+            let client = Client::new();
+            let api = OpenWeatherApiService::new(
+                client,
+                url.to_string() + "/data/2.5/weather",
+                api_key.to_string(),
+            )
+            .unwrap();
+
+            let result = api.get_weather_data(address, &None).await.unwrap();
+
+            mock_endpoint.assert();
+            assert_eq!(result.temp, temp);
+            assert_eq!(result.humidity, humidity);
+            assert_eq!(result.pressure, pressure);
+            assert_eq!(result.wind_speed, wind_speed);
+            assert_eq!(result.visibility, visibility);
+            assert_eq!(result.description, description);
+        }
+
+        #[allow(clippy::too_many_arguments)]
+        fn mock_openweather_history_server(
+            address: &str,
+            date: &str,
+            temp: f32,
+            humidity: u8,
+            pressure: u16,
+            wind_speed: f32,
+            visibility: u16,
+            description: &str,
+            api_key: &str,
+        ) -> (mockito::ServerGuard, mockito::Mock) {
+            let mock_response = json!(
+                {
+                    "main": {"temp": temp, "humidity": humidity, "pressure": pressure},
+                    "wind": {"speed": wind_speed},
+                    "visibility": visibility,
+                    "weather": [{"description": description}]
+                }
+            );
+
+            let mut mock_server = mockito::Server::new();
+
+            let mock_endpoint = mock_server
+                .mock("GET", "/data/2.5/weather")
+                .match_query(mockito::Matcher::UrlEncoded("q".into(), address.into()))
+                .match_query(mockito::Matcher::UrlEncoded(
+                    "units".into(),
+                    "metric".into(),
+                ))
+                .match_query(mockito::Matcher::UrlEncoded("appid".into(), api_key.into()))
+                .match_query(mockito::Matcher::UrlEncoded("dt".into(), date.into()))
+                .with_status(200)
+                .with_header("content-type", "text/json")
+                .with_body(mock_response.to_string())
+                .create();
+
+            (mock_server, mock_endpoint)
+        }
+
+        #[rstest]
+        #[case("AnotherCity", "2023-10-15 00:00", 22.0, 60, 1005, 12.0, 8000, "Rainy")]
+        #[case("ThirdCity", "2023-10-16 00:00", 25.0, 70, 1010, 8.0, 12000, "Sunny")]
+        #[case("FifthCity", "2023-10-17 00:00", 30.5, 80, 1002, 15.0, 6000, "Stormy")]
+        #[tokio::test]
+        #[allow(clippy::too_many_arguments)]
+        async fn test_get_weather_data_with_date(
+            #[case] address: &str,
+            #[case] date: &str,
+            #[case] temp: f32,
+            #[case] humidity: u8,
+            #[case] pressure: u16,
+            #[case] wind_speed: f32,
+            #[case] visibility: u16,
+            #[case] description: &str,
+        ) {
+            let api_key = "SomeApiKey";
+            let (mock_server, mock_endpoint) = mock_openweather_history_server(
+                address,
+                &parse_datetime_from_str(date)
+                    .unwrap()
+                    .timestamp()
+                    .to_string(),
                 temp,
                 humidity,
                 pressure,
@@ -247,10 +319,11 @@ mod tests {
             .unwrap();
 
             let result = api
-                .get_weather_data(address, &date.map(|d| d.to_string()))
+                .get_weather_data(address, &Some(date.to_owned()))
                 .await
                 .unwrap();
 
+            mock_endpoint.assert();
             assert_eq!(result.temp, temp);
             assert_eq!(result.humidity, humidity);
             assert_eq!(result.pressure, pressure);
@@ -283,9 +356,9 @@ mod tests {
             #[case] description: &str,
         ) {
             let api_key = "SomeApiKey";
-            let (mock_server, _) = mock_openweather_server(
+            let (mock_server, _) = mock_openweather_history_server(
                 address,
-                date,
+                date.unwrap_or_default(),
                 temp,
                 humidity,
                 pressure,
@@ -346,7 +419,7 @@ mod tests {
             let api_key = "123";
 
             let mut mock_server = mockito::Server::new();
-            mock_server
+            let mock_endpoint = mock_server
                 .mock("GET", "/data/2.5/weather")
                 .match_query(mockito::Matcher::UrlEncoded("q".into(), address.into()))
                 .match_query(mockito::Matcher::UrlEncoded(
@@ -374,6 +447,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
+            mock_endpoint.assert();
             assert!(matches!(result, WeatherDataError::JsonParse(_)));
         }
 
@@ -389,7 +463,7 @@ mod tests {
             });
 
             let mut mock_server = mockito::Server::new();
-            mock_server
+            let mock_endpoint = mock_server
                 .mock("GET", "/data/2.5/weather")
                 .match_query(mockito::Matcher::UrlEncoded("q".into(), address.into()))
                 .match_query(mockito::Matcher::UrlEncoded(
@@ -417,6 +491,7 @@ mod tests {
                 .downcast()
                 .unwrap();
 
+            mock_endpoint.assert();
             assert!(matches!(result, WeatherApiError::Server(_)));
         }
     }

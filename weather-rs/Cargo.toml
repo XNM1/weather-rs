@@ -1,0 +1,32 @@
+[package]
+name = "weather-rs"
+version = "0.1.0"
+authors = ["XNM <artem.shv@proton.me>"]
+description = "Fast and simple CLI tool for weather data fetching from different providers"
+keywords = ["weather", "cli", "tool", "fetch-api"]
+categories = ["command-line-utilities"]
+readme = "README.md"
+repository = "https://github.com/XNM1/weather-rs"
+license = "MIT"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.4.6", features = ["derive"] }
+confy = "0.5.1"
+convert_case = "0.6.0"
+indicatif = "0.17.7"
+narrate = "0.4.1"
+prettytable-rs = "0.10.0"
+reqwest = "0.11.22"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+thiserror = "1.0.49"
+tokio = { version = "1.33.0", features = ["full"] }
+
+# Workspaces dependencies
+weather-api-services = { path = "../weather-api-services" }
+
+[dev-dependencies]
+rstest = "0.18.2"

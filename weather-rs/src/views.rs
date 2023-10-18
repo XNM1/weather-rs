@@ -1,8 +1,9 @@
 use convert_case::{Case, Casing};
-use narrate::{colored::*, Result};
+use narrate::anyhow::Result;
+use narrate::colored::Colorize;
 use prettytable::{row, Table};
 
-use super::services::models::WeatherData;
+use weather_api_services::models::WeatherData;
 
 pub fn table_terminal_view(weather_data: WeatherData) {
     let mut table = Table::new();

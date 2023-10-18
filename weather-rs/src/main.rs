@@ -2,10 +2,12 @@ mod cli_parser;
 mod config;
 mod handlers;
 mod providers;
+mod views;
 
 use clap::Parser;
-use config::config_model::MainConfig;
-use narrate::{colored::Colorize, report, ExitCode, Result};
+use config::MainConfig;
+use narrate::anyhow::Result;
+use narrate::{colored::Colorize, report, ExitCode};
 
 use cli_parser::{Command, WeatherCli};
 use providers::{Provider, NOT_IMPLEMENTED_PROVIDERS};
@@ -18,7 +20,7 @@ async fn main() {
     let result = entry_point().await;
 
     if let Err(ref err) = result {
-        report::err_full(err);
+        report::anyhow_err_full(err);
         std::process::exit(err.exit_code());
     } else {
         std::process::exit(0);

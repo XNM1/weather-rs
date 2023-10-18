@@ -31,7 +31,7 @@ pub enum Command {
         /// The provider to be configured
         provider: Provider,
 
-        /// API Service URL (Example: Open Weather API - 'https://api.openweathermap.org/data/2.5/weather' or 'https://api.openweathermap.org/data/3.0/onecall')
+        /// API Service URL (Example: Open Weather API - 'https://api.openweathermap.org/data/2.5/weather')
         url: String,
 
         /// The API key for a service provider
