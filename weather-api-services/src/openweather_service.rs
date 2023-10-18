@@ -97,10 +97,7 @@ impl WeatherApi for OpenWeatherApiService {
 
         let status_code = response.status();
 
-        let response_body = &response
-            .text()
-            .await
-            .map_err(|_| WeatherApiError::BodyText)?;
+        let response_body = &response.text().await.map_err(WeatherApiError::BodyText)?;
 
         if status_code == StatusCode::OK {
             let openweather_data: OpenWeatherData =

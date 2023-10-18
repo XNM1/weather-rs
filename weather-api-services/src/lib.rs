@@ -27,7 +27,7 @@ pub enum WeatherApiError {
 
     /// Represents an error when sending a request to the Weather API.
     #[error("Failed to send a request to the Weather API; can be invalid 'url' or 'api_key'")]
-    Request(#[from] reqwest::Error),
+    Request(reqwest::Error),
 
     /// Represents an error with the provider server's response when an error occurs on the provider side, including a custom error message.
     #[error("Provider server response error '{0}'")]
@@ -35,7 +35,7 @@ pub enum WeatherApiError {
 
     /// Represents an error when processing the body text from the response.
     #[error("Can't process the body text from the response")]
-    BodyText,
+    BodyText(reqwest::Error),
 
     /// Represents an error when the provider don't support a specific feature.
     #[error("Service provider doesn't support a feature '{0}'")]

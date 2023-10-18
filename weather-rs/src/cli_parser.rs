@@ -2,27 +2,38 @@ use clap::{Parser, Subcommand};
 
 use crate::providers::Provider;
 
+/// The `WeatherCli` struct represents a command-line interface for weather-related operations.
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-/// Struct for CLI commands & arguments parsing
 pub struct WeatherCli {
     #[command(subcommand)]
     command: Command,
 }
 
+/// Methods for `WeatherCLI` for working with commands
 impl WeatherCli {
+    /// Gets a reference to the command stored in the `WeatherCli`.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the `Command` enum stored in the `WeatherCli`.
     #[allow(dead_code)]
     pub fn get_command(&self) -> &Command {
         &self.command
     }
 
+    /// Takes ownership of the `Command` enum stored in the `WeatherCli`.
+    ///
+    /// # Returns
+    ///
+    /// The `Command` enum previously stored in the `WeatherCli`.
     pub fn take_command(self) -> Command {
         self.command
     }
 }
 
-#[derive(Subcommand, Debug, PartialEq)]
 /// Enum for CLI commands
+#[derive(Subcommand, Debug, PartialEq)]
 pub enum Command {
     /// Get a full list of supported providers
     ProviderList,

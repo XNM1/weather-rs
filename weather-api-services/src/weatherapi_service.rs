@@ -1,5 +1,6 @@
 use anyhow::Result;
 use dateparser::parse as parse_datetime_from_str;
+use owo_colors::OwoColorize;
 use reqwest::{Client, StatusCode};
 use std::collections::HashMap;
 
@@ -97,10 +98,7 @@ impl WeatherApi for WeatherApiService {
 
         let status_code = response.status();
 
-        let response_body = &response
-            .text()
-            .await
-            .map_err(|_| WeatherApiError::BodyText)?;
+        let response_body = &response.text().await.map_err(WeatherApiError::BodyText)?;
 
         if status_code == StatusCode::OK {
             let weather_data = match date {
@@ -117,7 +115,10 @@ impl WeatherApi for WeatherApiService {
             let weather_error_data: WeatherApiErrorData =
                 serde_json::from_str(response_body).map_err(WeatherDataError::JsonParse)?;
 
-            Err(WeatherApiError::Server(weather_error_data.error.message).into())
+            Err(
+                WeatherApiError::Server(weather_error_data.error.message.yellow().to_string())
+                    .into(),
+            )
         }
     }
 }
