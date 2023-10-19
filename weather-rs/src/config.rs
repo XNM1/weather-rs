@@ -13,8 +13,9 @@ pub enum ConfigError {
     ///
     /// * `0` - A string representing the name of the service for which configuration reading failed.
     /// * `1` - A string representing the relative path to the configuration file in the default system configuration directory.
-    #[error("Failed to read configuration for '{0}' service; check url and api key for the API Service in '{1}' file in your config directory")]
-    ProviderConfig(String, String),
+    /// * `2` - A string representing the command used for the configuration of a provider.
+    #[error("Failed to read configuration for '{0}' service; check url and api key for the API Service in '{1}' file in your config directory; or configure api_key and\\or url using command '{2}'")]
+    ProviderConfig(String, String, String),
 }
 
 /// Represents the main configuration for the weather application.
