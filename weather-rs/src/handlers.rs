@@ -88,7 +88,7 @@ pub async fn get_weather_info(
                     .ok_or(ConfigError::ProviderConfig(
                         provider.to_string().yellow().to_string(),
                         "weather-rs/config.toml".yellow().to_string(),
-                        "weather-rs configure <provider> <api_key> [-u <url>]"
+                        "weather-rs configure <PROVIDER> <API_KEY> [-u <URL>]"
                             .yellow()
                             .to_string(),
                     ))?,
@@ -105,7 +105,7 @@ pub async fn get_weather_info(
                     .ok_or(ConfigError::ProviderConfig(
                         provider.to_string().yellow().to_string(),
                         "weather-rs/config.toml".yellow().to_string(),
-                        "weather-rs configure <provider> <api_key> [-u <url>]"
+                        "weather-rs configure <PROVIDER> <API_KEY> [-u <URL>]"
                             .yellow()
                             .to_string(),
                     ))?,

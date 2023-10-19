@@ -7,9 +7,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 use openweather_model::OpenWeatherData;
-use weatherapi_model::WeatherApiData;
-
-use self::weatherapi_model::WeatherApiHistoryData;
+use weatherapi_model::{WeatherApiData, WeatherApiHistoryData};
 
 /// Represents an error that occurs when there is an issue with parsing JSON response data.
 #[derive(Error, Debug)]
