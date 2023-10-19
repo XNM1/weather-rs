@@ -78,25 +78,31 @@ pub async fn get_weather_info(
     let client = reqwest::Client::new();
     let weather_api: Result<Box<dyn WeatherApi>> = match provider {
         Provider::OpenWeather => {
-            let open_weather_config = config
-                .open_weather
-                .ok_or(ConfigError::ProviderConfig(provider.to_string()))?;
+            let open_weather_config = config.open_weather;
 
             Ok(Box::new(OpenWeatherApiService::new(
                 client,
                 open_weather_config.url,
-                open_weather_config.api_key,
+                open_weather_config
+                    .api_key
+                    .ok_or(ConfigError::ProviderConfig(
+                        provider.to_string().yellow().to_string(),
+                        "weather-rs/config.toml".yellow().to_string(),
+                    ))?,
             )?))
         }
         Provider::WeatherApi => {
-            let weather_api_config = config
-                .weather_api
-                .ok_or(ConfigError::ProviderConfig(provider.to_string()))?;
+            let weather_api_config = config.weather_api;
 
             Ok(Box::new(WeatherApiService::new(
                 client,
                 weather_api_config.url,
-                weather_api_config.api_key,
+                weather_api_config
+                    .api_key
+                    .ok_or(ConfigError::ProviderConfig(
+                        provider.to_string().yellow().to_string(),
+                        "weather-rs/config.toml".yellow().to_string(),
+                    ))?,
             )?))
         }
         Provider::AccuWeather => Err(ProviderError::ProviderNotImplemented.into()),
@@ -126,8 +132,21 @@ pub async fn get_weather_info(
 /// * `provider` - The selected weather data provider.
 /// * `url` - The URL for the provider's API.
 /// * `api_key` - The API key for the provider's API.
-pub fn configure_provider(cfg: &mut MainConfig, provider: &Provider, url: String, api_key: String) {
-    let provider_config: Option<ProviderConfig> = Some(ProviderConfig { url, api_key });
+pub fn configure_provider(
+    cfg: &mut MainConfig,
+    provider: &Provider,
+    url: Option<String>,
+    api_key: String,
+) {
+    let provider_config = ProviderConfig {
+        url: url.unwrap_or_else(|| match provider {
+            Provider::OpenWeather => cfg.open_weather.url.clone(),
+            Provider::WeatherApi => cfg.weather_api.url.clone(),
+            Provider::AccuWeather => cfg.accu_weather.url.clone(),
+            Provider::AerisWeather => cfg.aeris_weather.url.clone(),
+        }),
+        api_key: Some(api_key),
+    };
 
     match provider {
         Provider::OpenWeather => cfg.open_weather = provider_config,
@@ -148,4 +167,43 @@ pub fn configure_provider(cfg: &mut MainConfig, provider: &Provider, url: String
 /// * `provider` - The selected weather data provider.
 pub fn select_provider(cfg: &mut MainConfig, provider: Provider) {
     cfg.selected_provider = provider;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(Some("https://example.com".to_owned()), "api_key")]
+    #[case(Some("".to_owned()), "api_key")]
+    fn test_configure_provider(#[case] url: Option<String>, #[case] api_key: String) {
+        let mut config = MainConfig::default();
+        let provider = Provider::OpenWeather;
+
+        configure_provider(&mut config, &provider, url.clone(), api_key.clone());
+
+        match provider {
+            Provider::OpenWeather => {
+                assert_eq!(
+                    config.open_weather,
+                    ProviderConfig {
+                        url: url.unwrap(),
+                        api_key: Some(api_key.clone())
+                    }
+                );
+            }
+            _ => panic!("Unexpected provider selection"),
+        }
+    }
+
+    #[rstest]
+    fn test_select_provider() {
+        let mut config = MainConfig::default();
+        let provider = Provider::WeatherApi;
+
+        select_provider(&mut config, provider.clone());
+
+        assert_eq!(config.selected_provider, provider);
+    }
 }

@@ -39,11 +39,12 @@ pub enum Command {
     ProviderList,
     /// Configure a provider with the given credentials
     Configure {
-        /// The provider to be configured
+        /// The provider to be configured (Example: 'open-weather', 'weather-api')
         provider: Provider,
 
-        /// API Service URL (Example: Open Weather API - 'https://api.openweathermap.org/data/2.5/weather')
-        url: String,
+        /// API Service URL (Example: Open Weather API - 'https://api.openweathermap.org/data/2.5/weather') (optional)
+        #[arg(short, long)]
+        url: Option<String>,
 
         /// The API key for a service provider
         api_key: String,

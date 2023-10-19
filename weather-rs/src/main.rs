@@ -56,22 +56,22 @@ async fn entry_point() -> Result<()> {
         Command::ProviderList => {
             let selected_provider = config.selected_provider;
             let configured_providers = vec![
-                if config.open_weather.is_some() {
+                if config.open_weather.api_key.is_some() {
                     Some(&Provider::OpenWeather)
                 } else {
                     None
                 },
-                if config.weather_api.is_some() {
+                if config.weather_api.api_key.is_some() {
                     Some(&Provider::WeatherApi)
                 } else {
                     None
                 },
-                if config.accu_weather.is_some() {
+                if config.accu_weather.api_key.is_some() {
                     Some(&Provider::AccuWeather)
                 } else {
                     None
                 },
-                if config.aeris_weather.is_some() {
+                if config.aeris_weather.api_key.is_some() {
                     Some(&Provider::AerisWeather)
                 } else {
                     None

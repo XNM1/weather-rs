@@ -72,7 +72,7 @@ impl WeatherApi for OpenWeatherApiService {
     async fn get_weather_data(&self, address: &str, date: &Option<String>) -> Result<WeatherData> {
         if date.is_some() {
             return Err(WeatherApiError::Feature(
-                "historical data | (weather for specific date)"
+                "historical data (weather for specific date)"
                     .yellow()
                     .to_string(),
             )
