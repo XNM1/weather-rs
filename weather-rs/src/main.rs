@@ -28,7 +28,7 @@ const CONFIG_NAME: &str = "config";
 ///
 /// This is the main function of the weather-rs application. It initializes the application, runs the main logic,
 /// and handles any errors that may occur during execution.
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let result = entry_point().await;
 
