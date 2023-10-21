@@ -31,7 +31,7 @@ pub fn provider_list_handler(
 
     for provider in Provider::get_all_variants() {
         let provider_str = if not_implemented_providers.contains(&&provider) {
-            format!("{} (not implemented)", provider).red()
+            format!("{} (not supported)", provider).red()
         } else if configured_providers.contains(&&provider) {
             format!("{} (configured)", provider).green()
         } else {
