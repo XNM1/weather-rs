@@ -37,6 +37,44 @@ You can download pre-compiled binaries from the [Release Section](https://github
 
 3. Add the `.cargo/bin` directory to your PATH environment variable in your shell or use it directly from the `.cargo/bin` directory.
 
+   - **Fish Shell:**
+     ```fish
+     set -gx PATH $HOME/.cargo/bin $PATH
+     ```
+
+   - **Bash or Zsh:**
+     ```bash
+     export PATH="$HOME/.cargo/bin:$PATH"
+     ```
+     
+   You can use the following commands in the shell for one-time use. Alternatively, you can set them in the appropriate shell configuration file to ensure they persist even after a shell restart. You can now use Cargo binaries seamlessly from the command line without specifying the full path to the `.cargo/bin` directory.
+
+### For Nix Package Manager and NixOS
+
+1. Clone the project from GitHub using the following command:
+
+   ```bash
+   git clone https://github.com/XNM1/weather-rs
+   ```
+
+2. Navigate to the cloned project folder:
+
+   ```bash
+   cd weather-rs
+   ```
+
+3. Build the project using Nix:
+
+   ```bash
+   nix build
+   ```
+
+4. Install the project using Nix Package Manager:
+
+   ```bash
+   nix-env -i ./result
+   ```
+
 ### From Source
 
 1. Clone the project from GitHub using the following command:
@@ -51,7 +89,7 @@ You can download pre-compiled binaries from the [Release Section](https://github
    cargo build --release
    ```
 
-3. You can find the executable binary in `<project folder>/target/release` called `weather-rs`.
+3. You can find the executable binary in `weather-rs/target/release` called `weather-rs`.
 
 ## Usage
 
