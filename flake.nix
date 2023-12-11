@@ -32,7 +32,7 @@
           ];
         };
 
-        packages.default = rustPlatform.buildRustPackage {
+        packages.default = rustPlatform.buildRustPackage rec {
           pname = manifest.name;
           version = manifest.version;
           cargoLock.lockFile = ./Cargo.lock;
