@@ -1,4 +1,6 @@
 [workspace]
+package.name = "weather-rs"
+package.version = "0.1.2"
 members = [
   "weather-api-services",
   "weather-rs"
